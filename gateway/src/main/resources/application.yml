@@ -1,0 +1,36 @@
+server:
+  port: 8987
+spring:
+  application:
+    name: gateway
+  cloud: #向consul上注册网关服务
+    consul:
+      host: 127.0.0.1
+      port: 8500
+    gateway:
+      routes:
+        - id: user_route
+#          uri: http://localhost:9999/
+          uri: lb://users   # lb代表负载均衡，users代表再注册中心的服务名
+          predicates:
+#            - Path=/user/**
+            - Path=/feign/**
+#            - After=2020-09-18T10:39:33.519+08:00[Asia/Shanghai] #在什么时间之后才能生效，注意时间格式这个好像必须要这种时间才能生效
+#            - Cookie=username,[A-Za-z0-9]+   #用正则表示请求的参数中必须带username  [A-Za-z0-9]+为正则表达式
+          fliter:
+            - AddRequestParameter=id,32  #为所有请求添加一个id=32的参数
+        - id: product_route
+#          uri: http://localhost:9998/
+          uri: lb://products
+          predicates:
+            - Path=/product/**
+          filters:
+            - AddRequestParameter=id, 32  #为所有请求添加一个id=32的参数
+      discovery:
+        locator:
+          enabled: true  #开启根据服务名获取动态路由
+management:
+  endpoints:
+    web:
+      exposure:
+        include: "*" #暴露路由规则web端点  /actuator/gateway/routes
